@@ -1,48 +1,56 @@
-// Make the AI Judge Laugh: Office Jokes — entry writer (program/v1, Node 22, stdlib only).
-// Writes the one-line office joke to $MAKEFUN_OUTPUT_DIR/entry.txt
-// (fallback /output/entry.txt), then reads it back and verifies the bytes match.
+// Office Jokes entry writer — program/v1, Node 22, standard library only.
+// Drops one office joke into $MAKEFUN_OUTPUT_DIR/entry.txt
+// (or /output/entry.txt when the variable is unset), then proves the
+// file on disk is byte-for-byte the joke it meant to write.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+// The joke itself: an IT ticket that keeps climbing the ladder while
+// the person who filed it stays put. Setup is a familiar office chore,
+// the punchline flips who is actually getting promoted.
 const JOKE =
-  "HR said our culture is like a family, which explains why Thanksgiving dinner and my performance review both end with someone crying in the bathroom.";
+  "I opened an IT ticket for a second monitor and it's been escalated so often it now has a better career path than I do.";
 
-const MAX_CHARS = 199;
+const LIMIT = 199;
+
+function fail(message: string): never {
+  throw new Error(`entry rejected: ${message}`);
+}
+
+function checkShape(text: string): void {
+  // One line only — a stray newline would make it two entries, not one joke.
+  if (/[\r\n]/.test(text)) fail("must be a single line");
+
+  // The gate wants real text, not a blank or whitespace-only file.
+  if (text.trim().length === 0) fail("must not be only white space");
+
+  // Gate window: 1 to 199 characters, counted as code units.
+  if (text.length < 1 || text.length > LIMIT) {
+    fail(`must be 1 to ${LIMIT} characters, got ${text.length}`);
+  }
+
+  // One sentence, ending in a single full stop — no extra periods
+  // hiding a second thought in the middle of the line.
+  const stops = (text.match(/\./g) ?? []).length;
+  if (stops !== 1 || !text.endsWith(".")) {
+    fail(`must be exactly one sentence, found ${stops} period(s)`);
+  }
+}
 
 function main(): void {
-  if (JOKE.length === 0 || JOKE.length > MAX_CHARS) {
-    throw new Error(
-      `entry must be 1 to ${MAX_CHARS} characters, got ${JOKE.length}`,
-    );
-  }
-  if (JOKE.trim().length === 0) {
-    throw new Error("entry must not be only white space");
-  }
+  checkShape(JOKE);
+  console.log(`entry is ${JOKE.length} characters, inside the limit`);
 
-  // A single line: no newline characters anywhere in the entry.
-  if (JOKE.includes("\n") || JOKE.includes("\r")) {
-    throw new Error("entry must be a single line");
-  }
+  const folder = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
+  mkdirSync(folder, { recursive: true });
+  const target = join(folder, "entry.txt");
+  writeFileSync(target, JOKE, "utf8");
 
-  // Exactly one sentence: one sentence-terminating period, at the end.
-  const periods = [...JOKE].filter((c) => c === ".").length;
-  if (periods !== 1 || !JOKE.endsWith(".")) {
-    throw new Error(
-      `entry must be exactly one sentence (one final period), found ${periods} period(s)`,
-    );
+  // Read it straight back: what the judge sees must be what we wrote.
+  if (readFileSync(target, "utf8") !== JOKE) {
+    fail(`${target} does not match the entry`);
   }
-  console.log(`entry length: ${JOKE.length} characters`);
-
-  const outDir = process.env.MAKEFUN_OUTPUT_DIR || "/output";
-  mkdirSync(outDir, { recursive: true });
-  const outPath = join(outDir, "entry.txt");
-  writeFileSync(outPath, JOKE, "utf8");
-
-  const readBack = readFileSync(outPath, "utf8");
-  if (readBack !== JOKE) {
-    throw new Error(`verification failed: ${outPath} does not match the entry`);
-  }
-  console.log(`wrote ${outPath} (${JOKE.length} characters, verified)`);
+  console.log(`wrote ${target} (${JOKE.length} characters, verified)`);
   console.log(JOKE);
 }
 

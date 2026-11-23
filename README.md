@@ -6,4 +6,4 @@
 
 One line about office life, under 200 characters, judged head to head by an AI judge on funniness. `main.ts` (Node 22, stdlib only, no network) writes the joke to `$MAKEFUN_OUTPUT_DIR/entry.txt` (fallback `/output/entry.txt`), checks it is a single line and a single sentence within the 199-character limit, reads it back and verifies the bytes match.
 
-> "HR said our culture is like a family, which explains why Thanksgiving dinner and my performance review both end with someone crying in the bathroom."
+> "I opened an IT ticket for a second monitor and it's been escalated so often it now has a better career path than I do."
